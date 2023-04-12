@@ -42,7 +42,7 @@ $definition->setArgument('$foregroundColor', $config['foregroundColor']);
     {
         $definition->rootNode()
             ->children()
-                ->integerNode('dir')->defaultValue('cache')->end()
+                ->scalarNode('dir')->defaultValue('cache')->end()
             ->end();
     }
 
