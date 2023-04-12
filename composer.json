@@ -1,0 +1,33 @@
+{
+    "name": "survos/scraper-bundle",
+    "type": "symfony-bundle",
+    "description": "Scrape and cache web pages",
+    "keywords": [
+        "symfony-ux",
+        "symfony6"
+    ],
+    "license": "MIT",
+    "require": {
+        "php": "^8.1",
+        "symfony/config": "^6.1.0",
+        "symfony/dependency-injection": "^6.1.0",
+        "symfony/http-kernel": "^6.1.0",
+        "twig/twig": "^3.4",
+        "symfony/cache": "^6.2",
+        "symfony/http-client": "^6.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Survos\\Scraper\\": "src/"
+        }
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^1.8",
+        "symfony/browser-kit": "^6.1.0",
+        "symfony/framework-bundle": "^6.1.0",
+        "symfony/phpunit-bridge": "^6.1.0",
+        "symfony/twig-bundle": "^6.1.0",
+        "symfony/var-dumper": "^6.1.0",
+        "symfony/webpack-encore-bundle": "^1.11"
+    }
+}
