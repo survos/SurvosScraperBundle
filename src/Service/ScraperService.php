@@ -11,12 +11,13 @@ use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
-class ScraperService {
+class ScraperService
+{
     public function __construct(
-        private string $dir,
-                                private HttpClientInterface $httpClient,
-                                private CacheInterface $cache,
-                                private LoggerInterface $logger,
+        private string              $dir,
+        private HttpClientInterface $httpClient,
+        private CacheInterface      $cache,
+        private LoggerInterface     $logger,
     )
     {
     }
@@ -39,42 +40,33 @@ class ScraperService {
         return $this;
     }
 
-    public function fetchUrl(string $url, array $parameters = [], array $headers=[], string $key=null)
+    public function fetchUrlFilename(string $url, array $parameters = [], array $headers = [], string $key = null): string
     {
         if (empty($key)) {
-            $key = pathinfo($url);
+            $key = pathinfo($url, PATHINFO_FILENAME);
         }
-        {
-            if (!file_exists($this->dir . $$key)) {
-                $content = $this->httpClient->request('GET', $url, [
-                    'query' => $parameters,
-                    'timeout' => 10
-                ])->getContent();
-                file_put_contents($this->dir . $key, $content);
-            }
-            return $content;
+        $fullPath = rtrim($this->dir, '/') . '/' . $key;
 
+        $cacheDir = pathinfo($fullPath, PATHINFO_DIRNAME);
+        if (!file_exists($cacheDir)) {
+            mkdir($cacheDir, 0755, true);
         }
 
-        $value = $this->cache->get( md5($url . json_encode($parameters)), function (ItemInterface $item) use ($url, $parameters) {
-            try {
-                $this->logger->warning("Fetching " . $url);
-                $content = $this->httpClient->request('GET', $url, [
-                    'query' => $parameters,
-                    'timeout' => 10
-                ])->getContent();
-            } catch (\Exception $exception) {
-                // eventually this will be in a message handler, so will automatically retry
-                $this->logger->error($exception->getMessage());
-                return null;
-            }
-            return $content;
-        });
-        return $value;
-
-        $filename = $this->dataDir = $this->bag->get('app_data_dir') . sprintf('Larco%d.html', $id);
-        return file_get_contents($filename);
+        if (!file_exists($fullPath)) {
+            $content = $this->httpClient->request('GET', $url, [
+                'query' => $parameters,
+                'timeout' => 10
+            ])->getContent();
+            file_put_contents($fullPath, $content);
+        }
+        return realpath($fullPath);
     }
+
+    public function fetchUrl(string $url, array $parameters = [], array $headers = [], string $key = null)
+    {
+        return file_get_contents($this->fetchUrlFilename($url, $parameters, $headers, $key));
+    }
+
 
 
 }
