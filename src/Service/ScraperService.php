@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Survos\Scraper\Service;
 
 use Psr\Log\LoggerInterface;
+use Psr\Log\LoggerAwareTrait;
 use Symfony\Component\Cache\Adapter\PdoAdapter;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Contracts\Cache\CacheInterface;
@@ -13,11 +14,13 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class ScraperService
 {
+    use LoggerAwareTrait;
+
     public function __construct(
         private string              $dir,
         private HttpClientInterface $httpClient,
         private CacheInterface      $cache,
-        private LoggerInterface     $logger,
+        LoggerInterface $logger = null,
     )
     {
     }
@@ -46,7 +49,6 @@ class ScraperService
             $key = pathinfo($url, PATHINFO_FILENAME);
         }
         $fullPath = rtrim($this->dir, '/') . '/' . $key;
-
         $cacheDir = pathinfo($fullPath, PATHINFO_DIRNAME);
         if (!file_exists($cacheDir)) {
             mkdir($cacheDir, 0755, true);
