@@ -2,7 +2,10 @@
     "name": "survos/scraper-bundle",
     "type": "symfony-bundle",
     "description": "Scrape and cache web pages",
-    "keywords": ["symfony-ux", "symfony6"],
+    "keywords": [
+        "symfony-ux",
+        "symfony6"
+    ],
     "license": "MIT",
     "require": {
         "php": "^8.1",
