@@ -18,6 +18,7 @@
     },
     "autoload": {
         "psr-4": {
+            "Survos\\Scraper\\Tests\\": "tests/",
             "Survos\\Scraper\\": "src/"
         }
     },
@@ -28,6 +29,7 @@
         "symfony/phpunit-bridge": "^6.1.0",
         "symfony/twig-bundle": "^6.1.0",
         "symfony/var-dumper": "^6.1.0",
-        "symfony/webpack-encore-bundle": "^1.11"
+        "symfony/webpack-encore-bundle": "^1.11",
+        "phpunit/phpunit": "^9.5"
     }
 }
