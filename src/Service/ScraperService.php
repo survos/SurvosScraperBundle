@@ -55,6 +55,7 @@ class ScraperService
         }
 
         if (!file_exists($fullPath)) {
+            $this->logger->info("Fetching $url to " . $fullPath);
             $content = $this->httpClient->request('GET', $url, [
                 'query' => $parameters,
                 'timeout' => 10
@@ -68,8 +69,6 @@ class ScraperService
     {
         return file_get_contents($this->fetchUrlFilename($url, $parameters, $headers, $key));
     }
-
-
 
 }
 
