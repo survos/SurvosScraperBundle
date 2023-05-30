@@ -16,6 +16,8 @@ class ScraperService
 {
     use LoggerAwareTrait;
 
+    private string $prefix; // dir within cache
+
     public function __construct(
         private string              $dir,
         private HttpClientInterface $httpClient,
@@ -42,13 +44,22 @@ class ScraperService
         $this->dir = $dir;
         return $this;
     }
+    /**
+     * @param string $dir
+     * @return ScraperService
+     */
+    public function setPrefix(string $prefix): ScraperService
+    {
+        $this->prefix = $prefix;
+        return $this;
+    }
 
     public function fetchUrlFilename(string $url, array $parameters = [], array $headers = [], string $key = null): string
     {
         if (empty($key)) {
             $key = pathinfo($url, PATHINFO_FILENAME);
         }
-        $fullPath = rtrim($this->dir, '/') . '/' . $key;
+        $fullPath = rtrim($this->dir, '/') . ($this->prefix ? '/' . rtrim($this->prefix . '/') : '') . '/' . $key;
         $cacheDir = pathinfo($fullPath, PATHINFO_DIRNAME);
         if (!file_exists($cacheDir)) {
             mkdir($cacheDir, 0755, true);
