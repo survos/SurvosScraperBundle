@@ -23,19 +23,8 @@ class SurvosScraperBundle extends AbstractBundle
         $definition->setArgument('$logger', new Reference('logger'));
 
         $definition->setArgument('$dir', $config['dir']);
-
-        // twig classes
-
-/*
-$definition = $builder
-->autowire('survos.barcode_twig', BarcodeTwigExtension::class)
-->addTag('twig.extension');
-
-$definition->setArgument('$widthFactor', $config['widthFactor']);
-$definition->setArgument('$height', $config['height']);
-$definition->setArgument('$foregroundColor', $config['foregroundColor']);
-*/
-
+        $definition->setArgument('$prefix', $config['prefix']);
+        $definition->setArgument('$sqliteFilename', $config['sqliteFilename']);
     }
 
     public function configure(DefinitionConfigurator $definition): void
@@ -43,6 +32,8 @@ $definition->setArgument('$foregroundColor', $config['foregroundColor']);
         $definition->rootNode()
             ->children()
                 ->scalarNode('dir')->defaultValue('cache')->end()
+                ->scalarNode('prefix')->defaultValue('')->end()
+                ->scalarNode('sqliteFilename')->defaultValue('scraper.sqlite')->end()
             ->end();
     }
 
