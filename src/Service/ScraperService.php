@@ -136,9 +136,11 @@ class ScraperService
         if ( ($dir = pathinfo($sqliteFilename, PATHINFO_DIRNAME)) && !file_exists($dir)) {
             mkdir($dir, recursive: true);
         }
-        $cache = new DoctrineDbalAdapter(
-            'sqlite:///' . $sqliteFilename,
-        );
+        if (!$cache = $this->getCache()) {
+            $cache = new DoctrineDbalAdapter(
+                'sqlite:///' . $sqliteFilename,
+            );
+        }
 
 //        dd($sqliteFilename, file_exists($sqliteFilename));
 //        $cache = $this->cache;
@@ -151,7 +153,13 @@ class ScraperService
                 $this->logger->warning("Fetching " . $url);
                 $content = $this->httpClient->request('GET', $url, [
                     'query' => $parameters,
-                    'timeout' => 10
+                    'timeout' => 30,
+//                    'retry_failed' => [
+//                        'max_retries' => 5,
+//                        'delay' => 2000,
+//                        'multiplier'=> 5,
+//                    ]
+
                 ])->getContent();
             try {
             } catch (\Exception $exception) {
@@ -161,9 +169,73 @@ class ScraperService
             }
             return $content;
         });
+        if (empty($value)) {
+            assert(false, $key . "\n" . self::getFilename($cache) );
+        }
         return $value;
 
     }
+
+    public function prune($callback=null)
+    {
+
+    }
+
+    public function clear()
+    {
+//        foreach self::g
+    }
+
+    static private function get_property(object $object, string $property) {
+        $array = (array) $object;
+        $propertyLength = strlen($property);
+        foreach ($array as $key => $value) {
+            $propertyNameParts = explode("\0", $key);
+            $propertyName = end($propertyNameParts);
+            if ($propertyName === $property) {
+                return $value;
+            }
+        }
+    }
+
+    static public function getFilename(DoctrineDbalAdapter $cache)
+    {
+        $conn = self::get_property($cache, 'conn');
+        $params = self::get_property($conn, 'params');
+        return $params['path'];
+    }
+
+    private function getKeys(DoctrineDbalAdapter $cache)
+    {
+        static $pdo = [];
+        $filename = self::getFilename($cache);
+        if (!file_exists($filename) || !filesize($filename)) {
+            return [];
+        }
+        try {
+            $pdo = new \PDO('sqlite:///' . $filename );
+            $stmt = $pdo->query('SELECT item_id from cache_items order by CAST(item_id AS INTEGER) DESC ');
+            $pdo = null;
+        } catch (\Exception $exception) {
+            dd($filename, $exception->getMessage());
+        }
+        return $stmt->fetchAll(\PDO::FETCH_COLUMN);
+    }
+
+    public function purgeEmpty(DoctrineDbalAdapter $cache)
+    {
+//        dd($cache, self::getFilename($cache));
+        foreach ($this->getKeys($cache) as $key) {
+            $item = $cache->getItem($key);
+            dd($item);
+            if (empty($item->get())) {
+                assert(false, $key);
+                $item->expiresAt(now());
+                $cache->delete($key);
+            }
+        }
+    }
+
 
     public function fetchUrl(string $url, array $parameters = [], array $headers = [], string $key = null)
     {
