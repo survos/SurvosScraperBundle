@@ -132,15 +132,17 @@ class ScraperService
         if (empty($key)) {
             $key = pathinfo($url, PATHINFO_FILENAME);
         }
-        $sqliteFilename = $this->getFullFilename();
-        if ( ($dir = pathinfo($sqliteFilename, PATHINFO_DIRNAME)) && !file_exists($dir)) {
-            mkdir($dir, recursive: true);
-        }
         if (!$cache = $this->getCache()) {
+            $sqliteFilename = $this->getFullFilename();
+            dd($sqliteFilename);
+            if ( ($dir = pathinfo($sqliteFilename, PATHINFO_DIRNAME)) && !file_exists($dir)) {
+                mkdir($dir, recursive: true);
+            }
             $cache = new DoctrineDbalAdapter(
                 'sqlite:///' . $sqliteFilename,
             );
         }
+//        dd(self::getFilename($cache));
 
 //        dd($sqliteFilename, file_exists($sqliteFilename));
 //        $cache = $this->cache;
@@ -150,6 +152,7 @@ class ScraperService
 
 //        https://symfony.com/doc/current/components/cache/adapters/pdo_doctrine_dbal_adapter.html#using-doctrine-dbal
         $value = $cache->get( $key, function (ItemInterface $item) use ($url, $parameters, $headers) {
+            try {
                 $this->logger->warning("Fetching " . $url);
                 $content = $this->httpClient->request('GET', $url, [
                     'query' => $parameters,
@@ -161,7 +164,6 @@ class ScraperService
 //                    ]
 
                 ])->getContent();
-            try {
             } catch (\Exception $exception) {
                 // eventually this will be in a message handler, so will automatically retry
                 $this->logger->error($exception->getMessage());
@@ -170,7 +172,7 @@ class ScraperService
             return $content;
         });
         if (empty($value)) {
-            assert(false, $key . "\n" . self::getFilename($cache) );
+//            assert(false, $key . "\n" . self::getFilename($cache) );
         }
         return $value;
 
