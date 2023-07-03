@@ -49,7 +49,7 @@ class ScraperService
     /**
      * @return CacheInterface
      */
-    public function getCache(): CacheInterface
+    public function getCache(): CacheInterface|DoctrineDbalAdapter
     {
         return $this->cache;
     }
@@ -151,10 +151,10 @@ class ScraperService
 //        assert($cache->hasItem($key), 'missing '. $key);
 
 //        https://symfony.com/doc/current/components/cache/adapters/pdo_doctrine_dbal_adapter.html#using-doctrine-dbal
-        $value = $cache->get( $key, function (ItemInterface $item) use ($url, $parameters, $headers) {
+        $value = $cache->get( $key, function (ItemInterface $item) use ($url, $parameters, $headers, $cache, $key) {
             try {
                 $this->logger->warning("Fetching " . $url);
-                $content = $this->httpClient->request('GET', $url, [
+                $request = $this->httpClient->request('GET', $url, [
                     'query' => $parameters,
                     'timeout' => 30,
 //                    'retry_failed' => [
@@ -163,7 +163,14 @@ class ScraperService
 //                        'multiplier'=> 5,
 //                    ]
 
-                ])->getContent();
+                ]);
+                switch ($statusCode = $request->getStatusCode()) {
+                    case 200: $content = $request->getContent(); break;
+                    case 403: $content = null;
+                    case 404: $content = null;
+                    default: $content = null;
+                }
+                $this->logger->warning(sprintf("received " . $statusCode. ' storing to #%s', $key));
             } catch (\Exception $exception) {
                 // eventually this will be in a message handler, so will automatically retry
                 $this->logger->error($exception->getMessage());
