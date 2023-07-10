@@ -153,7 +153,7 @@ class ScraperService
 //        https://symfony.com/doc/current/components/cache/adapters/pdo_doctrine_dbal_adapter.html#using-doctrine-dbal
         $value = $cache->get( $key, function (ItemInterface $item) use ($url, $parameters, $headers, $cache, $key) {
             try {
-                $this->logger->warning("Fetching " . $url);
+                $this->logger->info("Fetching " . $url);
                 $request = $this->httpClient->request('GET', $url, [
                     'query' => $parameters,
                     'timeout' => 30,
@@ -170,7 +170,7 @@ class ScraperService
                     case 404: $content = null;
                     default: $content = null;
                 }
-                $this->logger->warning(sprintf("received " . $statusCode. ' storing to #%s', $key));
+                $this->logger->info(sprintf("received " . $statusCode. ' storing to #%s', $key));
             } catch (\Exception $exception) {
                 // eventually this will be in a message handler, so will automatically retry
                 $this->logger->error($exception->getMessage());
