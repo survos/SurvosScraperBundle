@@ -20,7 +20,6 @@ class SurvosScraperBundle extends AbstractBundle
 
         $definition->setArgument('$cache', new Reference('cache.app'));
         $definition->setArgument('$httpClient', new Reference('http_client'));
-        $definition->setArgument('$logger', new Reference('logger'));
 
         $definition->setArgument('$dir', $config['dir']);
         $definition->setArgument('$prefix', $config['prefix']);
