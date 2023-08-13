@@ -183,6 +183,16 @@ class ScraperService
         $key = $slugger->slug($key)->toString();
 //        assert($cache->hasItem($key), 'missing '. $key);
 //        https://symfony.com/doc/current/components/cache/adapters/pdo_doctrine_dbal_adapter.html#using-doctrine-dbal
+
+        // we need better logic for handling errors. For now, retry empty
+        $item = $cache->getItem($key);
+        if ($item->isHit()) {
+            $value = $item->get();
+            if (empty($value)) {
+                $cache->delete($key);
+            }
+        }
+
         $value = $cache->get( $key, function (ItemInterface $item) use ($url, $options, $key, $method) {
 
             try {
