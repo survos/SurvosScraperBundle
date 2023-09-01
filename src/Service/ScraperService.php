@@ -148,10 +148,8 @@ class ScraperService
     )
     {
         if (empty($key)) {
-            $key = pathinfo($url, PATHINFO_FILENAME);
-            if ($method == 'POST') {
-                $key .= '-' . hash('xxh3', json_encode($parameters));
-            }
+            $key = pathinfo($url, PATHINFO_FILENAME); // sanity
+            $key .= '-' . hash('xxh3', $url . json_encode($parameters));
         }
         assert($this->getCache());
         if (!$cache = $this->getCache()) {
@@ -195,14 +193,21 @@ class ScraperService
 
         $value = $cache->get( $key, function (ItemInterface $item) use ($url, $options, $key, $method) {
 
+            $this->logger->info("Missing $key, Fetching " . $url);
+            $request = $this->httpClient->request($method, $url, $options);
             try {
-                $this->logger->info("Fetching " . $url);
-                $request = $this->httpClient->request($method, $url, $options);
-                switch ($statusCode = $request->getStatusCode()) {
-                    case 200: $content = $request->getContent(); break;
+                $statusCode = $request->getStatusCode();
+            } catch (\Exception $exception) {
+                return null;
+                // network error
+            }
+
+            try {
+                switch ($statusCode) {
+                    case 200: $content = $request->getContent(); break; // this could fail.
                     case 403:
                     case 404:
-                    default: $content = null;
+                    default: $content = json_encode(['statusCode' => $statusCode]);
                 }
                 $this->logger->info(sprintf("received " . $statusCode. ' storing to #%s', $key));
             } catch (\Exception $exception) {
@@ -212,6 +217,14 @@ class ScraperService
             }
             return $content;
         });
+        if (empty($value)) {
+//            assert(false, $key . "\n" . self::getFilename($cache) );
+        }
+        if (is_array($value)) {
+            // status codes?
+        }
+
+
         if (empty($value)) {
 //            assert(false, $key . "\n" . self::getFilename($cache) );
         }
