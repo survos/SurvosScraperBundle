@@ -4,24 +4,23 @@ declare(strict_types=1);
 
 namespace Survos\Scraper\Service;
 
+use JetBrains\PhpStorm\ArrayShape;
 use Psr\Log\LoggerInterface;
-use Psr\Log\LoggerAwareTrait;
 use Symfony\Component\Cache\Adapter\DoctrineDbalAdapter;
-use Symfony\Component\Cache\Adapter\PdoAdapter;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\String\Slugger\AsciiSlugger;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Contracts\HttpClient\ResponseInterface;
 
 class ScraperService
 {
-    use LoggerAwareTrait;
 
     public function __construct(
         private string              $dir,
         private HttpClientInterface $httpClient,
         private ?CacheInterface     $cache,
+        private ?LoggerInterface    $logger,
         private string              $prefix,
         private string              $sqliteFilename,
     )
@@ -79,6 +78,7 @@ class ScraperService
         $this->dir = $dir;
         return $this;
     }
+
     /**
      * @param string $dir
      * @return ScraperService
@@ -91,8 +91,8 @@ class ScraperService
 
     public function fetchUrlFilename(
         string $url,
-        array $parameters = [],
-        array $headers = [],
+        array  $parameters = [],
+        array  $headers = [],
         string $key = null,
         string $method = 'GET'
     ): string
@@ -141,10 +141,11 @@ class ScraperService
 
     public function fetchUrlUsingCache(
         string $url,
-        array $parameters = [],
-        array $headers = [],
+        array  $parameters = [],
+        array  $headers = [],
         string $key = null,
-        string $method = 'GET'
+        string $method = 'GET',
+        bool $asData=true,
     )
     {
         if (empty($key)) {
@@ -155,7 +156,7 @@ class ScraperService
         if (!$cache = $this->getCache()) {
             $sqliteFilename = $this->getFullFilename();
             dd($sqliteFilename);
-            if ( ($dir = pathinfo($sqliteFilename, PATHINFO_DIRNAME)) && !file_exists($dir)) {
+            if (($dir = pathinfo($sqliteFilename, PATHINFO_DIRNAME)) && !file_exists($dir)) {
                 mkdir($dir, recursive: true);
             }
             $cache = new DoctrineDbalAdapter(
@@ -191,48 +192,52 @@ class ScraperService
             }
         }
 
-        $value = $cache->get( $key, function (ItemInterface $item) use ($url, $options, $key, $method) {
+        // return an array with status_code and optionally content or data (array)
+        $responseData = $cache->get($key, function (ItemInterface $item) use ($url, $options, $key, $method, $asData) {
 
             $this->logger->info("Missing $key, Fetching " . $url);
-            $request = $this->httpClient->request($method, $url, $options);
+            $response = $this->httpClient->request($method, $url, $options);
+            $statusCode = $response->getStatusCode();
             try {
-                $statusCode = $request->getStatusCode();
             } catch (\Exception $exception) {
                 return null;
                 // network error
             }
 
+            $responseData['statusCode'] = $statusCode;
+
             try {
                 switch ($statusCode) {
-                    case 200: $content = $request->getContent(); break; // this could fail.
+                    case 200:
+                        try {
+                            $content = $response->getContent();
+                            if ($asData) {
+                                $responseData['data'] = $response->toArray();
+                            } else {
+                                $responseData['content'] = $content;
+                            }
+                        } catch (\Exception $exception) {
+
+                        }
+                        break; // this could fail.
                     case 403:
                     case 404:
-                    default: $content = json_encode(['statusCode' => $statusCode]);
+                    default:
+//                        $content = json_encode(['statusCode' => $statusCode]);
                 }
-                $this->logger->info(sprintf("received " . $statusCode. ' storing to #%s', $key));
+                $this->logger->info(sprintf("received " . $statusCode . ' storing to #%s', $key));
             } catch (\Exception $exception) {
                 // eventually this will be in a message handler, so will automatically retry
                 $this->logger->error($exception->getMessage());
-                return null;
             }
-            return $content;
+            return $responseData; // hopefully an array that's cachable!
         });
-        if (empty($value)) {
-//            assert(false, $key . "\n" . self::getFilename($cache) );
-        }
-        if (is_array($value)) {
-            // status codes?
-        }
 
-
-        if (empty($value)) {
-//            assert(false, $key . "\n" . self::getFilename($cache) );
-        }
-        return $value;
+        return $responseData;
 
     }
 
-    public function prune($callback=null)
+    public function prune($callback = null)
     {
 
     }
@@ -242,8 +247,9 @@ class ScraperService
 //        foreach self::g
     }
 
-    static private function get_property(object $object, string $property) {
-        $array = (array) $object;
+    static private function get_property(object $object, string $property)
+    {
+        $array = (array)$object;
         $propertyLength = strlen($property);
         foreach ($array as $key => $value) {
             $propertyNameParts = explode("\0", $key);
@@ -269,7 +275,7 @@ class ScraperService
             return [];
         }
         try {
-            $pdo = new \PDO('sqlite:///' . $filename );
+            $pdo = new \PDO('sqlite:///' . $filename);
             $stmt = $pdo->query('SELECT item_id from cache_items order by CAST(item_id AS INTEGER) DESC ');
             $pdo = null;
         } catch (\Exception $exception) {
@@ -304,5 +310,12 @@ class ScraperService
             return file_get_contents($this->fetchUrlFilename($url, $parameters, $headers, $key, $method));
         }
     }
+
+    public function request($url, array $parameters=[], string $method='GET'): ResponseInterface
+    {
+        // wrapper for http call.
+        return $this->httpClient->request($method, $url, $parameters);
+    }
+
 }
 
