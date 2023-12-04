@@ -148,10 +148,24 @@ class ScraperService
         bool $asData=true,
     )
     {
+//        $request = $this->httpClient->request('GET', 'https://www.rappnews.com/search/?f=json&q=%22foothills+forum%22&s=start_time&sd=desc&t=article&nsa=eedition&app%5B0%5D=editorial');
+//        $response = $request->getStatusCode();
+//        dd($response, $request->getInfo());
+//        $url = 'https://www.rappnews.com/search/';
+//        $parameters = [
+//            'f' => 'json',
+//            's' => 'start_time',
+//            'nsa' => 'eedition',
+//            'q' => 'foothills forum',
+//            't' => 'article',
+//            'l' => 10
+//        ];
+//        dump($url, $parameters);
         if (empty($key)) {
             $key = pathinfo($url, PATHINFO_FILENAME); // sanity
             $key .= '-' . hash('xxh3', $url . json_encode($parameters));
         }
+
         assert($this->getCache());
         if (!$cache = $this->getCache()) {
             $sqliteFilename = $this->getFullFilename();
@@ -220,6 +234,9 @@ class ScraperService
 
                         }
                         break; // this could fail.
+                    case 429:
+                        dd($response, $responseData);
+                        break;
                     case 403:
                     case 404:
                     default:
