@@ -6,6 +6,7 @@ namespace Survos\Scraper\Service;
 
 use JetBrains\PhpStorm\ArrayShape;
 use Psr\Log\LoggerInterface;
+//use Survos\Scraper\Cache\Adapter\TextCacheAdapter;
 use Symfony\Component\Cache\Adapter\DoctrineDbalAdapter;
 use Symfony\Component\String\Slugger\AsciiSlugger;
 use Symfony\Contracts\Cache\CacheInterface;
@@ -16,6 +17,7 @@ use Symfony\Contracts\HttpClient\ResponseInterface;
 class ScraperService
 {
 
+    // @todo: consider a key/value datastore instead of a cache: https://gist.github.com/sbrl/c3bfbbbb3d1419332e9ece1bac8bb71c
     public function __construct(
         private string              $dir,
         private HttpClientInterface $httpClient,
@@ -145,7 +147,7 @@ class ScraperService
         array  $headers = [],
         string $key = null,
         string $method = 'GET',
-        bool $asData=true,
+        ?string $asData=null, // or 'object', 'array'
     )
     {
 //        $request = $this->httpClient->request('GET', 'https://www.rappnews.com/search/?f=json&q=%22foothills+forum%22&s=start_time&sd=desc&t=article&nsa=eedition&app%5B0%5D=editorial');
@@ -205,6 +207,7 @@ class ScraperService
                 $cache->delete($key);
             }
         }
+//        $cache->createTable(); // for debugging
 
         // return an array with status_code and optionally content or data (array)
         $responseData = $cache->get($key, function (ItemInterface $item) use ($url, $options, $key, $method, $asData) {
@@ -219,17 +222,22 @@ class ScraperService
             }
 
             $responseData['statusCode'] = $statusCode;
+            $content = null;
 
             try {
                 switch ($statusCode) {
                     case 200:
                         try {
                             $content = $response->getContent();
-                            if ($asData) {
-                                $responseData['data'] = $response->toArray();
-                            } else {
-                                $responseData['content'] = $content;
-                            }
+//                            if ($asData) {
+//                                $content = $response->getContent();
+//                                $responseData['data'] =
+//                                    ($asData === 'array')
+//                                        ? $response->toArray() // or json_decode true?
+//                                        : json_decode($content, false);
+//                            } else {
+//                                $responseData['content'] = $response->getContent();
+//                            }
                         } catch (\Exception $exception) {
 
                         }
@@ -240,15 +248,24 @@ class ScraperService
                     case 403:
                     case 404:
                     default:
+//                        $content = null;
 //                        $content = json_encode(['statusCode' => $statusCode]);
                 }
+                $responseData['content'] = $content;
                 $this->logger->info(sprintf("received " . $statusCode . ' storing to #%s', $key));
             } catch (\Exception $exception) {
                 // eventually this will be in a message handler, so will automatically retry
                 $this->logger->error($exception->getMessage());
             }
-            return $responseData; // hopefully an array that's cachable!
+            return $responseData; // always an array where content is a STRING
         });
+
+        $content = $responseData['content']??null;
+        // convert it AFTER it's left the cache.  Too messy if in the cache, at least for now.   Maybe someday.
+        if ($asData && $content) {
+            $content = json_decode($content, $asData === 'array');
+        }
+        $responseData['data'] = $content;
 
         return $responseData;
 
@@ -316,14 +333,19 @@ class ScraperService
     }
 
 
-    public function fetchUrl(string $url, array $parameters = [], array $headers = [], string $key = null, string $method = 'GET')
+    public function fetchUrl(string $url, array $parameters = [], array $headers = [],
+                             string $key = null,
+                             string $method = 'GET',
+    ?string $asData = 'object'
+    )
     {
         // use the cache if it exists, otherwise, use the directory and prefix
         // maybe don't allow for images and other binary files?
         if ($this->cache) {
-            return $this->fetchUrlUsingCache($url, $parameters, $headers, $key, $method);
+            return $this->fetchUrlUsingCache($url, $parameters, $headers, $key, $method, $asData);
 
         } else {
+            assert(false, 'no cache!');
             return file_get_contents($this->fetchUrlFilename($url, $parameters, $headers, $key, $method));
         }
     }
