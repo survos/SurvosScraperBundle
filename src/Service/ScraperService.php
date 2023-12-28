@@ -265,7 +265,12 @@ class ScraperService
         if ($asData && $content) {
             $content = json_decode($content, $asData === 'array');
         }
-        $responseData['data'] = $content;
+        if (!is_array($responseData)) {
+            dump($responseData);
+        }
+        if (is_array($responseData)) {
+            $responseData['data'] = $content;
+        }
 
         return $responseData;
 
