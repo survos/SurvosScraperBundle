@@ -23,11 +23,18 @@ class TwigExtension extends AbstractExtension
     }
 
 
-    private function fetch(string $url, array $paramters=[], string $method='GET', bool $cache=true): ?string {
-        return $this->scraper->fetchUrlUsingCache($url, $paramters, method: $method, asData: false)['content']??null;
+    /**
+     * @param array<string, mixed> $parameters
+     */
+    private function fetch(string $url, array $parameters=[], string $method='GET', bool $cache=true): ?string {
+        return $this->scraper->fetchUrlUsingCache($url, $parameters, method: $method, asData: null)['content']??null;
     }
-    private function fetchData(string $url, array $paramters=[], string $method='GET'): array {
-        return $this->scraper->fetchUrlUsingCache($url, $paramters, method: $method, asData: true)['data']??[];
+    /**
+     * @param array<string, mixed> $parameters
+     * @return array
+     */
+    private function fetchData(string $url, array $parameters=[], string $method='GET', ?string $asData='array'): array|object|null {
+        return $this->scraper->fetchData($url, $parameters, method: $method, asData: $asData);
     }
 
 }

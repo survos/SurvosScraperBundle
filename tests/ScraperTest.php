@@ -28,7 +28,7 @@ class ScraperTest extends TestCase
         $dir = '../data/museum-digital-cache';
         $scraperService = $this->createMockService($dir);
 
-        $response = $scraperService->fetchUrl('https://exmaple.com/test');
+        $response = $scraperService->fetchUrl('https://example.com/test');
         $this->assertSame(json_encode([
             [
                 'title' => 'Example',

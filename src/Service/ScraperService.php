@@ -46,7 +46,7 @@ class ScraperService
     }
 
     /**
-     * @return CacheInterface
+     * @return CacheInterface|DoctrineDbalAdapter
      */
     public function getCache(): CacheInterface|DoctrineDbalAdapter
     {
@@ -82,7 +82,7 @@ class ScraperService
     }
 
     /**
-     * @param string $dir
+     * @param string $prefix
      * @return ScraperService
      */
     public function setPrefix(string $prefix): ScraperService
@@ -140,6 +140,17 @@ class ScraperService
         return $this->prefix;
     }
 
+    public function fetchData(string $url, array $parameters=[], string $method='GET', ?string $asData='array'): array|object|null {
+        if ($result = $this->fetchUrlUsingCache($url, $parameters, method: $method, asData: $asData)) {
+            assert(is_array($result));
+            assert(array_key_exists('data', $result));
+            return $result['data'];
+        } else {
+            dd($result, $url);
+            return $asData == 'array' ? [] : new \StdClass();
+        }
+    }
+
 
     public function fetchUrlUsingCache(
         string $url,
@@ -147,7 +158,7 @@ class ScraperService
         array  $headers = [],
         string $key = null,
         string $method = 'GET',
-        ?string $asData=null, // or 'object', 'array'
+        ?string $asData=null // or 'object', 'array'
     )
     {
 //        $request = $this->httpClient->request('GET', 'https://www.rappnews.com/search/?f=json&q=%22foothills+forum%22&s=start_time&sd=desc&t=article&nsa=eedition&app%5B0%5D=editorial');
@@ -200,17 +211,17 @@ class ScraperService
 //        https://symfony.com/doc/current/components/cache/adapters/pdo_doctrine_dbal_adapter.html#using-doctrine-dbal
 
         // we need better logic for handling errors. For now, retry empty
-        $item = $cache->getItem($key);
-        if ($item->isHit()) {
-            $value = $item->get();
-            if (empty($value)) {
-                $cache->delete($key);
-            }
-        }
+//        $item = $cache->getItem($key);
+//        if ($item->isHit()) {
+//            $value = $item->get();
+//            if (empty($value)) {
+//                $cache->delete($key);
+//            }
+//        }
 //        $cache->createTable(); // for debugging
 
         // return an array with status_code and optionally content or data (array)
-        $responseData = $cache->get($key, function (ItemInterface $item) use ($url, $options, $key, $method, $asData) {
+        $responseData = $cache->get($key, function (ItemInterface $item) use ($url, $options, $key, $method) {
 
             $this->logger->info("Missing $key, Fetching " . $url);
             $response = $this->httpClient->request($method, $url, $options);
@@ -328,10 +339,8 @@ class ScraperService
 //        dd($cache, self::getFilename($cache));
         foreach ($this->getKeys($cache) as $key) {
             $item = $cache->getItem($key);
-            dd($item);
             if (empty($item->get())) {
-                assert(false, $key);
-                $item->expiresAt(now());
+//                $item->expiresAt(now());
                 $cache->delete($key);
             }
         }
@@ -350,7 +359,7 @@ class ScraperService
             return $this->fetchUrlUsingCache($url, $parameters, $headers, $key, $method, $asData);
 
         } else {
-            assert(false, 'no cache!');
+            assert((bool)$this->cache, 'no cache!');
             return file_get_contents($this->fetchUrlFilename($url, $parameters, $headers, $key, $method));
         }
     }
