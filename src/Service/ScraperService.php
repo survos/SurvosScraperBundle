@@ -228,7 +228,7 @@ class ScraperService
             $options['query'] = $parameters;
             $response = $this->httpClient->request($method, $url, $options);
             $statusCode = $response->getStatusCode();
-            dd($url, $parameters, $response->getInfo('original_url'));
+//            dd($url, $parameters, $response->getInfo('original_url'));
 
             try {
             } catch (\Exception $exception) {
