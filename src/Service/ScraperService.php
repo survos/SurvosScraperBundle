@@ -6,6 +6,7 @@ namespace Survos\Scraper\Service;
 
 use JetBrains\PhpStorm\ArrayShape;
 use Psr\Log\LoggerInterface;
+
 //use Survos\Scraper\Cache\Adapter\TextCacheAdapter;
 use Symfony\Component\Cache\Adapter\DoctrineDbalAdapter;
 use Symfony\Component\String\Slugger\AsciiSlugger;
@@ -140,7 +141,8 @@ class ScraperService
         return $this->prefix;
     }
 
-    public function fetchData(string $url, array $parameters=[], string $method='GET', ?string $asData='array'): array|object|null {
+    public function fetchData(string $url, array $parameters = [], string $method = 'GET', ?string $asData = 'array'): array|object|null
+    {
         if ($result = $this->fetchUrlUsingCache($url, $parameters, method: $method, asData: $asData)) {
             assert(is_array($result));
             assert(array_key_exists('data', $result));
@@ -153,12 +155,12 @@ class ScraperService
 
 
     public function fetchUrlUsingCache(
-        string $url,
-        array  $parameters = [],
-        array  $headers = [],
-        string $key = null,
-        string $method = 'GET',
-        ?string $asData=null // or 'object', 'array'
+        string  $url,
+        array   $parameters = [],
+        array   $headers = [],
+        string  $key = null,
+        string  $method = 'GET',
+        ?string $asData = null // or 'object', 'array'
     )
     {
 //        $request = $this->httpClient->request('GET', 'https://www.rappnews.com/search/?f=json&q=%22foothills+forum%22&s=start_time&sd=desc&t=article&nsa=eedition&app%5B0%5D=editorial');
@@ -275,7 +277,7 @@ class ScraperService
             return $responseData; // always an array where content is a STRING
         });
 
-        $content = $responseData['content']??null;
+        $content = $responseData['content'] ?? null;
         // convert it AFTER it's left the cache.  Too messy if in the cache, at least for now.   Maybe someday.
         if ($asData && $content) {
             $content = json_decode($content, $asData === 'array');
@@ -351,10 +353,10 @@ class ScraperService
     }
 
 
-    public function fetchUrl(string $url, array $parameters = [], array $headers = [],
-                             string $key = null,
-                             string $method = 'GET',
-    ?string $asData = 'object'
+    public function fetchUrl(string  $url, array $parameters = [], array $headers = [],
+                             string  $key = null,
+                             string  $method = 'GET',
+                             ?string $asData = 'object'
     )
     {
         // use the cache if it exists, otherwise, use the directory and prefix
@@ -368,7 +370,7 @@ class ScraperService
         }
     }
 
-    public function request($url, array $parameters=[], string $method='GET'): ResponseInterface
+    public function request($url, array $parameters = [], string $method = 'GET'): ResponseInterface
     {
         // wrapper for http call.
         return $this->httpClient->request($method, $url, $parameters);
