@@ -222,7 +222,6 @@ class ScraperService
 //        }
 //        $cache->createTable(); // for debugging
 
-        $cache->delete($key);
         // return an array with status_code and optionally content or data (array)
         $responseData = $cache->get($key, function (ItemInterface $item) use ($url, $options, $parameters, $key, $method) {
 
