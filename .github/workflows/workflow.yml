@@ -67,7 +67,12 @@ jobs:
       - run: composer update --no-interaction --no-progress --ansi
       - run: composer phpunit
       -
-        if: matrix.beta
+        if: matrix.rc
         run: |
           composer config minimum-stability RC
+          composer config prefer-stable true
+      -
+        if: matrix.beta
+        run: |
+          composer config minimum-stability beta
           composer config prefer-stable true
