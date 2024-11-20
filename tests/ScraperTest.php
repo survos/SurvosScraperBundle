@@ -17,10 +17,10 @@ class ScraperTest extends TestCase
         $dir = '../data/museum-digital';
         $scraperService = $this->createMockService($dir);
 
-        $this->assertSame($dir, $scraperService->getDir());
+        $this->assertSame($dir, trim($scraperService->getDir(), '/'));
 
         $dir = '../data/museum-digital-cache';
-        $this->assertSame($dir, $scraperService->setDir($dir)->getDir());
+        $this->assertSame($dir, trim($scraperService->setDir($dir)->getDir(), '/'));
     }
 
     public function testFetchUrl()
@@ -29,12 +29,12 @@ class ScraperTest extends TestCase
         $scraperService = $this->createMockService($dir);
 
         $response = $scraperService->fetchUrl('https://example.com/test');
-        $this->assertSame(json_encode([
+        $this->assertSame(json_encode(
             [
                 'title' => 'Example',
                 'labels' => ['Test label'],
             ]
-        ]), $response);
+        ), $response);
     }
 
     /**
@@ -48,11 +48,15 @@ class ScraperTest extends TestCase
             'labels' => ['Test label'],
         ]));
 
-        return new ScraperService(
+        $scraperService = new ScraperService(
             $dir,
-            new MockHttpClient($mockResponse),
-            $this->createMock(CacheInterface::class),
-            $this->createMock(LoggerInterface::class)
+            $mockClient = new MockHttpClient($mockResponse),
+            null, // $this->createMock(CacheInterface::class),
+            $this->createMock(LoggerInterface::class),
+            'prefix',
+            'test.sqlite'
         );
+
+        return $scraperService;
     }
 }

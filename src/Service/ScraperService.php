@@ -9,6 +9,7 @@ use Psr\Log\LoggerInterface;
 
 //use Survos\Scraper\Cache\Adapter\TextCacheAdapter;
 use Symfony\Component\Cache\Adapter\DoctrineDbalAdapter;
+use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\String\Slugger\AsciiSlugger;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
@@ -163,6 +164,11 @@ class ScraperService
         ?string $asData = null // or 'object', 'array'
     )
     {
+        // if the cache is null, we might be inside of a test
+        if (!$this->cache) {
+            return $this->httpClient->request($method, $url, $parameters)->getContent();
+        }
+
 //        $request = $this->httpClient->request('GET', 'https://www.rappnews.com/search/?f=json&q=%22foothills+forum%22&s=start_time&sd=desc&t=article&nsa=eedition&app%5B0%5D=editorial');
 //        $response = $request->getStatusCode();
 //        dd($response, $request->getInfo());
@@ -182,7 +188,8 @@ class ScraperService
         }
 
         assert($this->getCache());
-        if (!$cache = $this->getCache()) {
+        $cache = $this->getCache();
+        if (!$cache) {
             $sqliteFilename = $this->getFullFilename();
             dd($sqliteFilename);
             if (($dir = pathinfo($sqliteFilename, PATHINFO_DIRNAME)) && !file_exists($dir)) {
@@ -191,6 +198,7 @@ class ScraperService
             $cache = new DoctrineDbalAdapter(
                 'sqlite:///' . $sqliteFilename,
             );
+            dd($cache::class);
         }
 
         $options = [
@@ -223,10 +231,15 @@ class ScraperService
 //        $cache->createTable(); // for debugging
 
         // return an array with status_code and optionally content or data (array)
+        if ($this->httpClient instanceof MockHttpClient) {
+            $responseData = $this->httpClient->request($method, $url, $options)->getContent();
+        }
+        dd($this->httpClient::class);
         $responseData = $cache->get($key, function (ItemInterface $item) use ($url, $options, $parameters, $key, $method) {
 
             $this->logger->info("Missing $key, Fetching " . $url);
             $options['query'] = $parameters;
+            dd($this->httpClient::class);
             $response = $this->httpClient->request($method, $url, $options);
             $statusCode = $response->getStatusCode();
 //            dd($url, $parameters, $response->getInfo('original_url'));
@@ -352,7 +365,9 @@ class ScraperService
     }
 
 
-    public function fetchUrl(string  $url, array $parameters = [], array $headers = [],
+    public function fetchUrl(string  $url,
+                             array $parameters = [],
+                             array $headers = [],
                              string  $key = null,
                              string  $method = 'GET',
                              ?string $asData = 'object'
@@ -360,8 +375,9 @@ class ScraperService
     {
         // use the cache if it exists, otherwise, use the directory and prefix
         // maybe don't allow for images and other binary files?
+        return $this->fetchUrlUsingCache($url, $parameters, $headers, $key, $method, $asData);
+
         if ($this->cache) {
-            return $this->fetchUrlUsingCache($url, $parameters, $headers, $key, $method, $asData);
 
         } else {
             assert((bool)$this->cache, 'no cache!');

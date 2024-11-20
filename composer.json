@@ -8,13 +8,21 @@
     ],
     "license": "MIT",
     "require": {
-        "php": "^8.1",
-        "symfony/config": "^6.3 || ^7.0",
-        "symfony/dependency-injection": "^6.3 || ^7.0",
-        "symfony/http-kernel": "^6.3 || ^7.0",
-        "symfony/http-client": "^6.3 || ^7.0",
-        "symfony/string": "^7.0",
+        "php": "^8.3",
+            "symfony/config": "^6.4 || ^7.0",
+        "symfony/dependency-injection": "^6.4 || ^7.0",
+        "symfony/http-kernel": "^6.4 || ^7.0",
+        "symfony/http-client": "^6.4 || ^7.0",
+        "symfony/string": "^6.4 || ^7.0",
         "ext-pdo": "*"
+    },
+    "scripts": {
+        "phpstan": "phpstan",
+        "phpunit-base": "phpunit tests/",
+        "phpunit": "@phpunit-base --testdox",
+        "phpunit-coverage-text": "@phpunit-base --coverage-text --colors=never",
+        "cs-check": "mkdir -p var/cache && php-cs-fixer fix --dry-run --diff --cache-file=var/cache/.php_cs.cache",
+        "cs-fix": "mkdir -p var/cache && php-cs-fixer fix --diff --cache-file=var/cache/.php_cs.cache"
     },
     "autoload": {
         "psr-4": {
@@ -24,12 +32,12 @@
     },
     "require-dev": {
         "phpstan/phpstan": "^1.10",
-        "symfony/browser-kit": "^6.3 || ^7.0",
-        "symfony/cache": "^6.3 || ^7.0",
-        "symfony/framework-bundle": "^6.3 || ^7.0",
-        "symfony/phpunit-bridge": "^6.3 || ^7.0",
-        "symfony/twig-bundle": "^6.3 || ^7.0",
-        "symfony/var-dumper": "^6.3 || ^7.0",
+        "symfony/browser-kit": "^6.4 || ^7.0",
+        "symfony/cache": "^6.4 || ^7.0",
+        "symfony/framework-bundle": "^6.4 || ^7.0",
+        "symfony/phpunit-bridge": "^6.4 || ^7.0",
+        "symfony/twig-bundle": "^6.4 || ^7.0",
+        "symfony/var-dumper": "^6.4 || ^7.0",
         "twig/twig": "^3.4",
         "phpunit/phpunit": "^9.5||^10.0||^11.0",
         "psr/log": "^3.0"
