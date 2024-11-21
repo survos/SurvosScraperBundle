@@ -97,7 +97,7 @@ class ScraperService
         string $url,
         array  $parameters = [],
         array  $headers = [],
-        string $key = null,
+        string|null $key = null,
         string $method = 'GET'
     ): string
     {
@@ -159,7 +159,7 @@ class ScraperService
         string  $url,
         array   $parameters = [],
         array   $headers = [],
-        string  $key = null,
+        string|null  $key = null,
         string  $method = 'GET',
         ?string $asData = null // or 'object', 'array'
     )
@@ -368,7 +368,7 @@ class ScraperService
     public function fetchUrl(string  $url,
                              array $parameters = [],
                              array $headers = [],
-                             string  $key = null,
+                             string|null  $key = null,
                              string  $method = 'GET',
                              ?string $asData = 'object'
     )
