@@ -9,12 +9,14 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
+        "ext-pdo": "*",
         "symfony/config": "^6.4 || ^7.0",
         "symfony/dependency-injection": "^6.4 || ^7.0",
         "symfony/http-kernel": "^6.4 || ^7.0",
         "symfony/http-client": "^6.4 || ^7.0",
         "symfony/string": "^6.4 || ^7.0",
-        "ext-pdo": "*"
+        "symfony/cache-contracts": "^3.5",
+        "symfony/http-client-contracts": "^3.5"
     },
     "scripts": {
         "phpstan": "phpstan",

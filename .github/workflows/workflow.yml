@@ -9,7 +9,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.3
+          php-version: 8.4
       - name: Checkout
         uses: actions/checkout@v4
       - name: composer install
@@ -32,47 +32,42 @@ jobs:
 #        run: composer install
 ##      - name: CS Check
 ##        run: composer cs-check
-  tests:
-    name: PHP ${{ matrix.php }} / SF ^${{ matrix.symfony }}
+  phpunit:
+    name: PHPUnit (PHP ${{ matrix.php-version }} - Symfony ${{ matrix.symfony-version }})
     runs-on: ubuntu-latest
+    env:
+      SYMFONY_REQUIRE: ${{ matrix.symfony-version }}
+
     strategy:
-        fail-fast: false
-        matrix:
-          include:
-#            - description: 'Symfony 7.2 RC'
-#              php: '8.3'
-#              symfony: '7.2.*'
-#              rc: true
-            - description: 'Symfony 7.1'
-              php: '8.3'
-              symfony: '7.1.*'
-            - description: 'Symfony 6.4'
-              php: '8.3'
-              symfony: '6.4.*'
+      matrix:
+        php-version:
+          - '8.3'
+          - '8.4'
+        symfony-version:
+          - '6.4.*'
+          - '7.1.*'
 
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
-#      - name: Setup MySQL
-#        run: |
-#          sudo systemctl enable mysql.service
-#          sudo systemctl start mysql.service
-#          mysql -uroot -proot -h localhost -e "CREATE DATABASE test CHARACTER SET utf8 COLLATE utf8_general_ci;"
-      - name: Setup PHP
+
+      - name: Install PHP with pcov
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php }}
-      - run: |
-          sed -ri 's/"symfony\/(.+)": "(.+)"/"symfony\/\1": "${{ matrix.symfony }}"/' composer.json;
-      - run: composer update --no-interaction --no-progress --ansi
-      - run: composer phpunit
-      -
-        if: matrix.rc
+          coverage: none
+          php-version: ${{ matrix.php-version }}
+
+      - name: Install Symfony Flex
         run: |
-          composer config minimum-stability RC
-          composer config prefer-stable true
-      -
-        if: matrix.beta
-        run: |
-          composer config minimum-stability beta
-          composer config prefer-stable true
+          composer config --global --no-plugins allow-plugins.symfony/flex true
+          composer global require --no-progress --no-scripts --no-plugins symfony/flex
+
+      - name: Install Composer dependencies
+        uses: ramsey/composer-install@v3
+
+      - name: Run PHPStan
+        run: composer phpstan
+
+      - name: Run Unit
+        run: composer phpunit
+
