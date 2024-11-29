@@ -234,12 +234,10 @@ class ScraperService
         if ($this->httpClient instanceof MockHttpClient) {
             $responseData = $this->httpClient->request($method, $url, $options)->getContent();
         }
-        dd($this->httpClient::class);
         $responseData = $cache->get($key, function (ItemInterface $item) use ($url, $options, $parameters, $key, $method) {
 
             $this->logger->info("Missing $key, Fetching " . $url);
             $options['query'] = $parameters;
-            dd($this->httpClient::class);
             $response = $this->httpClient->request($method, $url, $options);
             $statusCode = $response->getStatusCode();
 //            dd($url, $parameters, $response->getInfo('original_url'));
