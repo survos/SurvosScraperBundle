@@ -234,7 +234,8 @@ class ScraperService
         if ($this->httpClient instanceof MockHttpClient) {
             $responseData = $this->httpClient->request($method, $url, $options)->getContent();
         }
-        $responseData = $cache->get($key, function (ItemInterface $item) use ($url, $options, $parameters, $key, $method) {
+        $responseData = $cache->get($key, function (ItemInterface $item) use ($url, $options, $parameters, $key, $method) 
+        {
 
             $this->logger->info("Missing $key, Fetching " . $url);
             $options['query'] = $parameters;
